@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     volumes:
       - database:/var/lib/postgresql/data
+      - ./data/backups:/backups
     environment:
       - POSTGRES_PASSWORD=${PG_PASS:?database password required}
       - POSTGRES_USER=${PG_USER:-authentik}
@@ -25,8 +26,6 @@ services:
       AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
       AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
       AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
-      # AUTHENTIK_ERROR_REPORTING__ENABLED: "true"
-      # WORKERS: 2
     volumes:
       - ./data/media:/media
       - ./data/custom-templates:/templates
@@ -46,10 +45,6 @@ services:
       AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
       AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
       AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
-      # AUTHENTIK_ERROR_REPORTING__ENABLED: "true"
-    # This is optional, and can be removed. If you remove this, the following will happen
-    # - The permissions for the /media folders aren't fixed, so make sure they are 1000:1000
-    # - The docker socket can't be accessed anymore
     user: root
     volumes:
       - ./data/media:/media

@@ -38,12 +38,32 @@ services:
       - POSTGRES_PASSWORD=${DB_PASS:-vaultpassword}
     volumes:
       - database:/var/lib/postgresql/data
-      - ./data/backups:/backups
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  pgbackups:
+    image: prodrigestivill/postgres-backup-local:13-alpine
+    restart: unless-stopped
+    # user: postgres:postgres TODO: Maybe enable in the future
+    volumes:
+      - ./data/backups:/backups
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=${DB_NAME:-vault}
+      - POSTGRES_USER=${DB_USER:-vault}
+      - POSTGRES_PASSWORD=${DB_PASS:-vaultpassword}
+      - POSTGRES_EXTRA_OPTS=-Z6 --schema=public --blobs
+      - SCHEDULE=${DB_BACKUP_SCHEDULE}
+      - BACKUP_KEEP_DAYS=${DB_BACKUP_KEEP_DAYS}
+      - BACKUP_KEEP_WEEKS=${DB_BACKUP_KEEP_WEEKS}
+      - BACKUP_KEEP_MONTHS=${DB_BACKUP_KEEP_MONTHS}
+      - HEALTHCHECK_PORT=8080
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   database:

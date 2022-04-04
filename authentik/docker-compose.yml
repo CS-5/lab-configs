@@ -90,8 +90,7 @@ services:
       - BACKUP_KEEP_MONTHS=${DB_BACKUP_KEEP_MONTHS}
       - HEALTHCHECK_PORT=8080
     depends_on:
-      postgresql:
-        condition: service_healthy
+      - postgresql
 
 volumes:
   database:

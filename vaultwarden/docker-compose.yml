@@ -8,8 +8,8 @@ services:
       - "${VAULT_PORT_HTTP:-9011}:80"
       - "${VAULT_PORT_WS:-9012}:3012"
     environment:
-      - DATABASE_URL=postgresql://${DB_USER:-vault}:${DB_PASS:-vaultpassword}@db:${DB_PORT:-5432}/${DB_NAME:-vault}
-      - ADMIN_TOKEN=${VAULT_ADMIN_TOKEN}
+      - DATABASE_URL=postgresql://${DB_USER:-vault}:${DB_PASS:?database password required}@db:${DB_PORT:-5432}/${DB_NAME:-vault}
+      - ADMIN_TOKEN=${VAULT_ADMIN_TOKEN:?admin token required}
       - DOMAIN=${VAULT_DOMAIN}
       - SMTP_FROM=${VAULT_SMTP_FROM}
       - SMTP_HOST=#{VAULT_SMTP_HOST}

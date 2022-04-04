@@ -44,7 +44,7 @@ services:
       timeout: 5s
       retries: 5
 
-  pgbackups:
+  backups:
     image: prodrigestivill/postgres-backup-local:13-alpine
     restart: unless-stopped
     # user: postgres:postgres TODO: Maybe enable in the future

@@ -24,7 +24,7 @@ services:
       - INVITATION_ORG_NAME=${VAULT_NAME}
       - WEBSOCKET_ENABLED=true
     volumes:
-      - ./data/bitwarden:/data
+      - ./data/server:/data
     depends_on:
       - db
 

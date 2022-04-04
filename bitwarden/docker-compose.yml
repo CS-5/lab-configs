@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  vaultwarden:
+  server:
     image: vaultwarden/server:${VAULT_TAG:-latest}
     restart: unless-stopped
     ports:
@@ -26,11 +26,10 @@ services:
     volumes:
       - ./data/bitwarden:/data
     depends_on:
-      db:
-        condition: service_healthy
+      - db
 
   db:
-    image: postgres:13-alpine
+    image: postgres:14-alpine
     restart: unless-stopped
     environment:
       - POSTGRES_DB=${DB_NAME:-vault}
@@ -45,7 +44,7 @@ services:
       retries: 5
 
   backups:
-    image: prodrigestivill/postgres-backup-local:13-alpine
+    image: prodrigestivill/postgres-backup-local:14-alpine
     restart: unless-stopped
     # user: postgres:postgres TODO: Maybe enable in the future
     volumes:
@@ -62,8 +61,7 @@ services:
       - BACKUP_KEEP_MONTHS=${DB_BACKUP_KEEP_MONTHS}
       - HEALTHCHECK_PORT=8080
     depends_on:
-      db:
-        condition: service_healthy
+      - db
 
 volumes:
   database:

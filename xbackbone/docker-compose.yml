@@ -1,0 +1,33 @@
+version: "3.8"
+services:
+  server:
+    image: lscr.io/linuxserver/xbackbone
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - ./data/config:/config
+      - ./data/uploads:/uploads
+    ports:
+      - 80:80
+      - 443:443
+    restart: unless-stopped
+
+  mariadb:
+    image: lscr.io/linuxserver/mariadb:alpine
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASS:?you must supply a root password}
+      - TZ=America/New_York
+      - MYSQL_DATABASE=${DB_NAME:-xbackbone}
+      - MYSQL_USER=${DB_USER:-xbackbone}
+      - MYSQL_PASSWORD=${DB_PASS:?you must supply a database password}
+    volumes:
+      - database:/var/lib/mysql
+
+volumes:
+  database:
+    driver: local

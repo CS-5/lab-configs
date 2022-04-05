@@ -8,7 +8,7 @@ services:
       - "${VAULT_PORT_HTTP:-9011}:80"
       - "${VAULT_PORT_WS:-9012}:3012"
     environment:
-      - DATABASE_URL=postgresql://${DB_USER:-vault}:${DB_PASS:?database password required}@db:${DB_PORT:-5432}/${DB_NAME:-vault}
+      - DATABASE_URL=postgresql://${DB_USER:-vault}:${DB_PASS:?database password required}@postgresql:${DB_PORT:-5432}/${DB_NAME:-vault}
       - ADMIN_TOKEN=${VAULT_ADMIN_TOKEN:?admin token required}
       - DOMAIN=${VAULT_DOMAIN}
       - SMTP_FROM=${VAULT_SMTP_FROM}
@@ -28,7 +28,7 @@ services:
     depends_on:
       - db
 
-  db:
+  postgresql:
     image: postgres:14-alpine
     restart: unless-stopped
     environment:
@@ -48,9 +48,9 @@ services:
     restart: unless-stopped
     # user: postgres:postgres TODO: Maybe enable in the future
     volumes:
-      - ./data/backups:/backups
+      - ./data/db-backups:/backups
     environment:
-      - POSTGRES_HOST=db
+      - POSTGRES_HOST=postgresql
       - POSTGRES_DB=${DB_NAME:-vault}
       - POSTGRES_USER=${DB_USER:-vault}
       - POSTGRES_PASSWORD=${DB_PASS:-vaultpassword}

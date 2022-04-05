@@ -77,12 +77,12 @@ services:
     restart: unless-stopped
     # user: postgres:postgres TODO: Maybe enable in the future
     volumes:
-      - ./data/backups:/backups
+      - ./data/db-backups:/backups
     environment:
-      - POSTGRES_HOST=db
+      - POSTGRES_HOST=postgresql
       - POSTGRES_DB=${PG_DB:-authentik}
       - POSTGRES_USER=${PG_USER:-authentik}
-      - POSTGRES_PASSWORD=${PG_PASS:?database password required}
+      - POSTGRES_PASSWORD=${PG_PASS}
       - POSTGRES_EXTRA_OPTS=-Z6 --schema=public --blobs
       - SCHEDULE=${DB_BACKUP_SCHEDULE}
       - BACKUP_KEEP_DAYS=${DB_BACKUP_KEEP_DAYS}

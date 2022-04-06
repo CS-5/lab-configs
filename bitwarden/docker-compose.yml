@@ -23,7 +23,7 @@ services:
       - "${VAULT__PORT_HTTP:-9011}:80"
       - "${VAULT__PORT_WS:-9012}:3012"
     environment:
-      DATABASE_URL: postgresql://${DB__USER:-vault}:${DB__PASS}@postgresql:${DB__PORT:-5432}/${DB__NAME:-vault}
+      DATABASE_URL: postgresql://${DB__USER:-vault}:${DB__PASS}@postgresql:5432/${DB__NAME:-vault}
       ADMIN_TOKEN: ${VAULT__ADMIN_TOKEN:?admin token required}
     env_file:
       - .env

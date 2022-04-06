@@ -1,40 +1,13 @@
 version: "3.8"
 
 services:
-  server:
-    image: vaultwarden/server:${VAULT_TAG:-latest}
-    restart: unless-stopped
-    ports:
-      - "${VAULT_PORT_HTTP:-9011}:80"
-      - "${VAULT_PORT_WS:-9012}:3012"
-    environment:
-      - DATABASE_URL=postgresql://${DB_USER:-vault}:${DB_PASS:?database password required}@postgresql:${DB_PORT:-5432}/${DB_NAME:-vault}
-      - ADMIN_TOKEN=${VAULT_ADMIN_TOKEN:?admin token required}
-      - DOMAIN=${VAULT_DOMAIN}
-      - SMTP_FROM=${VAULT_SMTP_FROM}
-      - SMTP_HOST=#{VAULT_SMTP_HOST}
-      - SMTP_PORT=${VAULT_SMTP_PORT}
-      - SMTP_SSL=${VAULT_SMTP_SSL}
-      - SMTP_FROM_NAME=${VAULT_NAME}
-      - YUBICO_SECRET_KEY=${VAULT_YUBICO_SECRET}
-      - YUBICO_CLIENT_ID=${VAULT_YUBICO_CLIENT}
-      - SIGNUPS_VERIFY=${VAULT_SIGNUPS_VERIFY}
-      - SIGNUPS_ALLOWED=${VAULT_SIGNUPS_ALLOWED}
-      - INVITATIONS_ALLOWED=${VAULT_INVITATIONS_ALLOWED}
-      - INVITATION_ORG_NAME=${VAULT_NAME}
-      - WEBSOCKET_ENABLED=true
-    volumes:
-      - ./data/server:/data
-    depends_on:
-      - db
-
   postgresql:
-    image: postgres:14-alpine
+    image: postgres:${DB__TAG:-14-alpine}
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=${DB_NAME:-vault}
-      - POSTGRES_USER=${DB_USER:-vault}
-      - POSTGRES_PASSWORD=${DB_PASS:-vaultpassword}
+      POSTGRES_DB: ${DB__NAME:-vault}
+      POSTGRES_USER: ${DB__USER:-vault}
+      POSTGRES_PASSWORD: ${DB__PASS:?database password required}
     volumes:
       - database:/var/lib/postgresql/data
     healthcheck:
@@ -43,25 +16,42 @@ services:
       timeout: 5s
       retries: 5
 
-  backups:
-    image: prodrigestivill/postgres-backup-local:14-alpine
+  server:
+    image: vaultwarden/server:${VAULT__TAG:-latest}
     restart: unless-stopped
-    # user: postgres:postgres TODO: Maybe enable in the future
-    volumes:
-      - ./data/db-backups:/backups
+    ports:
+      - "${VAULT__PORT_HTTP:-9011}:80"
+      - "${VAULT__PORT_WS:-9012}:3012"
     environment:
-      - POSTGRES_HOST=postgresql
-      - POSTGRES_DB=${DB_NAME:-vault}
-      - POSTGRES_USER=${DB_USER:-vault}
-      - POSTGRES_PASSWORD=${DB_PASS:-vaultpassword}
-      - POSTGRES_EXTRA_OPTS=-Z6 --schema=public --blobs
-      - SCHEDULE=${DB_BACKUP_SCHEDULE}
-      - BACKUP_KEEP_DAYS=${DB_BACKUP_KEEP_DAYS}
-      - BACKUP_KEEP_WEEKS=${DB_BACKUP_KEEP_WEEKS}
-      - BACKUP_KEEP_MONTHS=${DB_BACKUP_KEEP_MONTHS}
-      - HEALTHCHECK_PORT=8080
+      DATABASE_URL: postgresql://${DB__USER:-vault}:${DB__PASS}@postgresql:${DB__PORT:-5432}/${DB__NAME:-vault}
+      ADMIN_TOKEN: ${VAULT__ADMIN_TOKEN:?admin token required}
+    env_file:
+      - .env
+    volumes:
+      - ./data/server:/data
     depends_on:
       - db
+
+  db-backup: # Backups handled by https://github.com/tiredofit/docker-db-backup
+    image: tiredofit/db-backup:latest
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./data/db-backups:/backup
+    environment:
+      DB_TYPE: pgsql
+      DB_HOST: postgresql
+      DB_NAME: ${DB__NAME:-vault}
+      DB_USER: ${DB__USER:-vault}
+      DB_PASS: ${DB__PASS}
+      DB_DUMP_FREQ: ${DB__BACKUP_DUMP_FREQ:-1440}
+      DB_DUMP_BEGIN: ${DB__BACKUP_DUMP_BEGIN:-0300}
+      DB_CLEANUP_TIME: ${DB__BACKUP_CLEANUP_TIME:-10080}
+      CHECKSUM: ${DB__BACKUP_CHECKSUM:-SHA1}
+      COMPRESSION: ${DB__BACKUP_COMPRESSION:-ZSTD}
+    restart: unless-stopped
+    depends_on:
+      - postgresql
 
 volumes:
   database:

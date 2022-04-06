@@ -7,9 +7,9 @@ services:
     volumes:
       - database:/var/lib/postgresql/data
     environment:
-      - POSTGRES_PASSWORD=${PG_PASS:?database password required}
-      - POSTGRES_USER=${PG_USER:-authentik}
-      - POSTGRES_DB=${PG_DB:-authentik}
+      POSTGRES_PASSWORD: ${PG_PASS:?database password required}
+      POSTGRES_USER: ${PG_USER:-authentik}
+      POSTGRES_DB: ${PG_DB:-authentik}
     env_file:
       - .env
     healthcheck:
@@ -72,23 +72,24 @@ services:
     env_file:
       - .env
 
-  backups:
-    image: prodrigestivill/postgres-backup-local:12-alpine
-    restart: unless-stopped
-    # user: postgres:postgres TODO: Maybe enable in the future
+  db-backup: # Backups handled by https://github.com/tiredofit/docker-db-backup
+    image: tiredofit/db-backup:latest
+    tmpfs:
+      - /tmp
     volumes:
-      - ./data/db-backups:/backups
+      - ./data/db-backups:/backup
     environment:
-      - POSTGRES_HOST=postgresql
-      - POSTGRES_DB=${PG_DB:-authentik}
-      - POSTGRES_USER=${PG_USER:-authentik}
-      - POSTGRES_PASSWORD=${PG_PASS}
-      - POSTGRES_EXTRA_OPTS=-Z6 --schema=public --blobs
-      - SCHEDULE=${DB_BACKUP_SCHEDULE}
-      - BACKUP_KEEP_DAYS=${DB_BACKUP_KEEP_DAYS}
-      - BACKUP_KEEP_WEEKS=${DB_BACKUP_KEEP_WEEKS}
-      - BACKUP_KEEP_MONTHS=${DB_BACKUP_KEEP_MONTHS}
-      - HEALTHCHECK_PORT=8080
+      DB_TYPE: pgsql
+      DB_HOST: postgresql
+      DB_NAME: ${PG_DB:-authentik}
+      DB_USER: ${PG_USER:-authentik}
+      DB_PASS: ${PG_PASS}
+      DB_DUMP_FREQ: ${DB__BACKUP_DUMP_FREQ:-1440}
+      DB_DUMP_BEGIN: ${DB__BACKUP_DUMP_BEGIN:-0300}
+      DB_CLEANUP_TIME: ${DB__BACKUP_CLEANUP_TIME:-10080}
+      CHECKSUM: ${DB__BACKUP_CHECKSUM:-SHA1}
+      COMPRESSION: ${DB__BACKUP_COMPRESSION:-ZSTD}
+    restart: unless-stopped
     depends_on:
       - postgresql
 

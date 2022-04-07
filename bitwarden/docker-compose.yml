@@ -11,7 +11,7 @@ services:
     volumes:
       - database:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB__USER:-vault}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,7 +30,7 @@ services:
     volumes:
       - ./data/server:/data
     depends_on:
-      - db
+      - postgres
 
   pgbackups:
     image: prodrigestivill/postgres-backup-local:latest

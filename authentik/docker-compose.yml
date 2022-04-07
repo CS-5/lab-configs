@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  postgresql:
+  postgres:
     image: postgres:12-alpine
     restart: unless-stopped
     volumes:
@@ -23,12 +23,12 @@ services:
     restart: unless-stopped
 
   server:
-    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2022.3.3}
+    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-latest}
     restart: unless-stopped
     command: server
     environment:
       AUTHENTIK_REDIS__HOST: redis
-      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__HOST: postgres
       AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
       AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
       AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
@@ -43,12 +43,12 @@ services:
       - "0.0.0.0:${AUTHENTIK_PORT_HTTPS:-9443}:9443"
 
   worker:
-    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2022.3.3}
+    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-latest}
     restart: unless-stopped
     command: worker
     environment:
       AUTHENTIK_REDIS__HOST: redis
-      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__HOST: postgres
       AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
       AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
       AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
@@ -72,26 +72,24 @@ services:
     env_file:
       - .env
 
-  db-backup: # Backups handled by https://github.com/tiredofit/docker-db-backup
-    image: tiredofit/db-backup:latest
-    tmpfs:
-      - /tmp
-    volumes:
-      - ./data/db-backups:/backup
-    environment:
-      DB_TYPE: pgsql
-      DB_HOST: postgresql
-      DB_NAME: ${PG_DB:-authentik}
-      DB_USER: ${PG_USER:-authentik}
-      DB_PASS: ${PG_PASS}
-      DB_DUMP_FREQ: ${DB__BACKUP_DUMP_FREQ:-1440}
-      DB_DUMP_BEGIN: ${DB__BACKUP_DUMP_BEGIN:-0300}
-      DB_CLEANUP_TIME: ${DB__BACKUP_CLEANUP_TIME:-10080}
-      CHECKSUM: ${DB__BACKUP_CHECKSUM:-SHA1}
-      COMPRESSION: ${DB__BACKUP_COMPRESSION:-ZSTD}
+  pgbackups:
+    image: prodrigestivill/postgres-backup-local:latest
     restart: unless-stopped
+    # user: postgres:postgres # TODO: Possibly enable this in the future
+    volumes:
+      - ./data/db-backups:/backups
     depends_on:
-      - postgresql
+      - postgres
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${PG_DB:-authentik}
+      POSTGRES_USER: ${PG_USER:-authentik}
+      POSTGRES_PASSWORD: ${PG_PASS}
+      SCHEDULE: ${DB__BACKUP_SCHEDULE:-@daily}
+      BACKUP_KEEP_DAYS: ${DB__BACKUP_KEEP_DAYS:-7}
+      BACKUP_KEEP_WEEKS: ${DB__BACKUP_KEEP_WEEKS:-1}
+      BACKUP_KEEP_MONTHS: ${DB__BACKUP_KEEP_MONTHS:-0}
+      HEALTHCHECK_PORT: 8080
 
 volumes:
   database:

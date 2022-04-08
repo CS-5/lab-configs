@@ -1,32 +1,56 @@
 version: "3.8"
 services:
-  server:
-    image: lscr.io/linuxserver/xbackbone
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/New_York
-    volumes:
-      - ./data/config:/config
-      - ./data/uploads:/uploads
-    ports:
-      - 80:80
-      - 443:443
-    restart: unless-stopped
-
   mariadb:
     image: lscr.io/linuxserver/mariadb:alpine
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASS:?you must supply a root password}
-      - TZ=America/New_York
-      - MYSQL_DATABASE=${DB_NAME:-xbackbone}
-      - MYSQL_USER=${DB_USER:-xbackbone}
-      - MYSQL_PASSWORD=${DB_PASS:?you must supply a database password}
+      PUID: 1000
+      PGID: 1000
+      TZ: ${TZ}
+      MYSQL_ROOT_PASSWORD: ${DB__ROOT_PASS:?you must supply a root password}
+      MYSQL_DATABASE: ${DB__NAME:-xbackbone}
+      MYSQL_USER: ${DB__USER:-xbackbone}
+      MYSQL_PASSWORD: ${DB__PASS:?you must supply a database password}
     volumes:
       - database:/var/lib/mysql
+
+  server:
+    image: lscr.io/linuxserver/xbackbone:${BB__TAG:-latest}
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: ${TZ}
+    volumes:
+      - ./data/server:/config
+      - ./data/uploads:/uploads
+    ports:
+      - ${BB__PORT_HTTP:-80}:80
+      - ${BB__PORT_HTTPS:-443}:443
+    restart: unless-stopped
+    depends_on:
+      - mariadb
+
+  mariabackups:
+    image: tiredofit/db-backup
+    volumes:
+      - ./data/db-backups:/backup
+    tmpfs:
+      - /tmp
+    environment:
+      DB_TYPE: mariadb
+      DB_HOST: mariadb
+      DB_NAME: ${DB__NAME:-xbackbone}
+      DB_USER: ${DB__USER:-xbackbone}
+      DB_PASS: ${DB__PASS}
+      DB_DUMP_FREQ: ${DB__DUMP_FREQ:-1440}
+      DB_DUMP_BEGIN: ${DB__DUMP_FREQ:-0000}
+      DB_CLEANUP_TIME: ${DB__DUMP_FREQ:-10080}
+      CHECKSUM: ${DB__CHECKSUM:-SHA1}
+      COMPRESSION: ${DB__COMPRESSION:-ZSTD}
+      SPLIT_DB: ${DB__SPLIT_DB:-TRUE}
+    restart: unless-stopped
+    depends_on:
+      - mariadb
 
 volumes:
   database:

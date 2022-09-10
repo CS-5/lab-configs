@@ -1,2 +1,2 @@
-# lab-compose
-Docker compose configurations for my lab
+# lab-configs
+A collection of configuration files for my lab
